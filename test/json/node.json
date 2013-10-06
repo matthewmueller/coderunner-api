@@ -1,0 +1,6 @@
+{
+  "files": {
+    "index.js": "var uid = require('uid');\nconsole.log(uid);",
+    "package.json": "{\"name\":\"something\",\"version\":\"0.0.1\",\"dependencies\":{\"uid\":\"*\"}}"
+  }
+}
