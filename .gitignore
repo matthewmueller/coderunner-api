@@ -1,0 +1,14 @@
+build
+!lib/build
+data
+components
+node_modules
+logs
+pids
+cids
+.vagrant
+scripts
+*.swp
+lib/conf/private.js
+lib/conf/client.js
+assets

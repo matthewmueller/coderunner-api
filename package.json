@@ -1,0 +1,11 @@
+{
+  "name": "coderunner-api",
+  "version": "0.0.1",
+  "private": true,
+  "main": "index.js",
+  "dependencies": {
+    "express": "~3.4.0",
+    "c.js": "0.0.2"
+  },
+  "devDependencies": {}
+}
