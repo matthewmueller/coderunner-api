@@ -10,6 +10,9 @@ var server = require('http').createServer(app);
 var conf = require('conf');
 var args = require('args');
 var port = args.port || 8080;
+var co = require('co');
+var Volume = require('volume');
+var Runner = require('runner/runner.js');
 
 /**
  * Configuration
@@ -17,51 +20,61 @@ var port = args.port || 8080;
 
 app.use(express.favicon(__dirname + '/favicon.ico'));
 app.use(express.bodyParser());
-app.use('/engine.io', es.handleRequest.bind(es));
 
 app.configure('production', function() {
   app.use(express.compress());
 });
 
 app.configure('development', function(){
-  app.use(require('build'));
   app.use(express.logger('dev'));
 });
 
-app.use(express.static(__dirname + '/build'));
-
 /**
- * Session support
+ * Routes
+ *
+ * Test commands:
+ *
+ * - node.js: curl --data @test/json/node.json -H "Content-Type: application/json" http://localhost:8080/node
  */
 
-var dbdir = conf['db path'];
-var session = new Session({
-  dbLocation: join(dbdir, 'sessions'),
-  ttl : 60 * 60 // 1hr
+app.post('/:lang', function(req, res, next) {
+  var runner = new Runner(req.params.lang);
+  var body = req.body;
+  if (!runner) return res.send(500, { error: 'language not supported.' });
+  if (!body.files) return res.send(400, { error: 'no files to run.' });
+
+  // volume
+  var volume = new Volume(conf['script volume']);
+  var write = co.wrap(volume.write, volume);
+
+  // runner
+  var install = co.wrap(runner.install, runner);
+  var run = co.wrap(runner.run, runner);
+
+  // run the script
+  var go = co(function *() {
+
+    // write files
+    yield write(body.files);
+
+    // give the runner the volume directory
+    runner.cwd(volume.path);
+
+    // install the code
+    yield install();
+
+    // run the code
+    var result = yield run();
+
+    // return the result
+    return result;
+  });
+
+  go(function(err, result) {
+    if (err) return console.error(err);
+    res.send(result);
+  });
 });
-
-app.use(express.cookieParser());
-app.use(express.session({
-  store: session,
-  secret: conf['session secret'] || 'leveldb secret'
-}));
-
-// session defaults
-app.use(function(req, res, next) {
-  if (!req.session.scripts) req.session.scripts = [];
-  next();
-});
-
-/**
- * Mount
- */
-
-app.use(require('script/api'));
-
-IO.on('install', require('install'));
-IO.on('run', require('run'));
-
-app.use(require('home'));
 
 /**
  * Environment configurations
