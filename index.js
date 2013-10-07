@@ -43,12 +43,14 @@ app.post('/:lang', function(req, res, next) {
   if (!runner) return res.send(500, { error: 'language not supported.' });
   if (!body.files) return res.send(400, { error: 'no files to run.' });
 
+  runner.files(body.files);
+
   // volume
   var volume = new Volume(conf['script volume']);
   var write = co.wrap(volume.write, volume);
 
   // runner
-  var install = co.wrap(runner.install, runner);
+  // var install = co.wrap(runner.install, runner);
   var run = co.wrap(runner.run, runner);
 
   // run the script
@@ -61,7 +63,7 @@ app.post('/:lang', function(req, res, next) {
     runner.cwd(volume.path);
 
     // install the code
-    yield install();
+    // yield install();
 
     // run the code
     var result = yield run();
@@ -71,7 +73,7 @@ app.post('/:lang', function(req, res, next) {
   });
 
   go(function(err, result) {
-    if (err) return console.error(err);
+    if (err) return res.send(500, { error: err });
     res.send(result);
   });
 });

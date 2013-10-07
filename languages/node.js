@@ -2,23 +2,22 @@
  * Install
  */
 
-exports.install = 'npm install -s'
+// exports.install = function(files, ctx, fn) {
+//   var pkg = files['package.json'];
+//   if (!pkg) return fn(null, false);
+//   var deps = JSON.parse(pkg).dependencies;
+//   if (!deps) return fn(null, false);
+
+//   var arr = [];
+//   for(var dep in deps) {
+//     arr.push(dep + '@' + deps[dep]);
+//   }
+
+//   fn(null, 'npm install -s ' + arr.join(' '));
+// }
 
 /**
  * Run
  */
 
-exports.run = 'node .';
-
-/**
- * Core libraries
- *
- * Probably would be handled on client-side. Core libraries shouldn't be in
- * the package.json anyway.
- */
-
-// exports.core = [ 'assert', 'buffer', 'child_process', 'cluster', 'crypto', 'dgram', 'dns',
-//                  'domain', 'events', 'fs', 'http', 'https', 'net', 'os', 'path', 'punycode',
-//                  'querystring', 'readline', 'stream', 'string_decoder', 'tls', 'tty', 'url',
-//                  'util', 'vm', 'zlib', 'smalloc'
-//                ];
+exports.run = 'ln -s ../node_modules/ node_modules; npm install -s > /dev/null; node .';
