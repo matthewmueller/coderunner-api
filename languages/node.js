@@ -21,3 +21,4 @@
  */
 
 exports.run = 'ln -s ../node_modules/ node_modules; npm install -s > /dev/null; node .';
+// exports.run = 'npm install -s > /dev/null; node .';

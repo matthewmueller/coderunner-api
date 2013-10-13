@@ -62,9 +62,6 @@ app.post('/:lang', function(req, res, next) {
     // give the runner the volume directory
     runner.cwd(volume.path);
 
-    // install the code
-    // yield install();
-
     // run the code
     var result = yield run();
 
@@ -74,7 +71,8 @@ app.post('/:lang', function(req, res, next) {
 
   go(function(err, result) {
     if (err) return res.send(500, { error: err });
-    res.send(result);
+    if (result.stderr) return res.send(400, { stderr: result.stderr });
+    return res.send(200, result.stdout);
   });
 });
 
