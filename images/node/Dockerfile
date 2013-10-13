@@ -15,6 +15,3 @@ run    curl http://nodejs.org/dist/v0.10.13/node-v0.10.13-linux-x64.tar.gz | tar
 
 # Set the working directory
 workdir /home
-
-# Run the script
-cmd    ln -s ../node_modules/ node_modules; npm install -s > /dev/null; node .
