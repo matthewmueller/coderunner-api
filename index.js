@@ -37,6 +37,13 @@ app.configure('development', function(){
  * - node.js: curl --data @test/json/node.json -H "Content-Type: application/json" http://localhost:8080/node
  */
 
+app.post('/', function(req, res, next) {
+  var body = req.body;
+  if (!body.language) return next();
+  req.url = '/' + body.language;
+  next();
+});
+
 app.post('/:lang', function(req, res, next) {
   var runner = new Runner(req.params.lang);
   var body = req.body;
@@ -100,9 +107,11 @@ app.configure('production', function() {
  * Listen
  */
 
-server.listen(port, function() {
-  console.log('listening on port %s', port);
-});
+if (!module.parent) {
+  server.listen(port, function() {
+    console.log('listening on port %s', port);
+  });
+}
 
 /**
  * Graceful shutdown
