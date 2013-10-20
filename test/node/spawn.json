@@ -1,0 +1,6 @@
+{
+  "files": {
+    "index.js": "var cp = require('child_process'); var spawn = cp.spawn; var cmd = 'sh'; var args = ['-c', 'while true; do echo \"hi\" >> test.txt; sleep 2; done']; var child = spawn(cmd, args, { detached: true }); child.unref(); console.log('running child pid: %s', child.pid);",
+    "package.json": "{\"name\":\"something\",\"version\":\"0.0.1\",\"dependencies\":{} }"
+  }
+}

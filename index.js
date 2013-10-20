@@ -37,6 +37,13 @@ app.configure('development', function(){
  * - node.js: curl --data @test/json/node.json -H "Content-Type: application/json" http://localhost:8080/node
  */
 
+app.post('/', function(req, res, next) {
+  var body = req.body;
+  if (!body.language) return next();
+  req.url = '/' + body.language;
+  next();
+});
+
 app.post('/:lang', function(req, res, next) {
   var runner = new Runner(req.params.lang);
   var body = req.body;
@@ -62,9 +69,6 @@ app.post('/:lang', function(req, res, next) {
     // give the runner the volume directory
     runner.cwd(volume.path);
 
-    // install the code
-    // yield install();
-
     // run the code
     var result = yield run();
 
@@ -74,7 +78,8 @@ app.post('/:lang', function(req, res, next) {
 
   go(function(err, result) {
     if (err) return res.send(500, { error: err });
-    res.send(result);
+    if (result.stderr) return res.send(400, { stderr: result.stderr });
+    return res.send(200, result.stdout);
   });
 });
 
@@ -102,9 +107,11 @@ app.configure('production', function() {
  * Listen
  */
 
-server.listen(port, function() {
-  console.log('listening on port %s', port);
-});
+if (!module.parent) {
+  server.listen(port, function() {
+    console.log('listening on port %s', port);
+  });
+}
 
 /**
  * Graceful shutdown
