@@ -16,7 +16,17 @@
     "co-exec": "~1.1.0",
     "shelly": "0.0.3",
     "thunkify": "0.0.1",
-    "emitter-component": "~1.0.1"
+    "emitter-component": "~1.0.1",
+    "commander": "~2.0.0",
+    "superagent": "~0.15.7"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "better-assert": "*",
+    "mocha": "*",
+    "supertest": "*",
+    "running": "*"
+  },
+  "bin": {
+    "coderunner": "./bin/coderunner"
+  }
 }

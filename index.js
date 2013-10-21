@@ -2,6 +2,7 @@
  * Module dependencies.
  */
 
+var debug = require('debug')('coderunner')
 var express = require('express');
 var app = module.exports = express();
 var server = require('http').createServer(app);
@@ -40,7 +41,7 @@ if (args.insecure) {
  *
  * Test commands:
  *
- * - node.js: curl --data @test/json/node.json -H "Content-Type: application/json" http://localhost:8080/node
+ * - node.js: curl --data @test/node/fast.json -H "Content-Type: application/json" http://localhost:8080/node
  */
 
 app.post('/', function(req, res, next) {
@@ -51,26 +52,25 @@ app.post('/', function(req, res, next) {
 });
 
 app.post('/:lang', function(req, res, next) {
-  var body = req.body;
-  if (!body.files) return res.send(400, { error: 'no files to run.' });
-
   var lang = req.params.lang;
   var cmd = language(lang);
   if (!cmd) return res.send(500, { error: 'language not supported.' });
+  var body = req.body;
+  if (!body.files) return res.send(400, { error: 'no files to run.' });
 
   // add the context
   var ctx = {};
   ctx.files = body.files;
-  ctx.language = body.language;
+  ctx.language = lang;
 
-  // run the script
-  var go = co(function *() {
+  // write the script to a volume
+  function write(files) {
+    return volume(files);
+  }
 
-    // write files
-    ctx.cwd = yield volume(body.files);
-
-    // Install
-    ctx.timeout = 30000;
+  // install the dependencies
+  function install(ctx) {
+    ctx.timeout = 60000;
     var installer = new Runner(ctx);
 
     installer.on('stdout', function(stdout) {
@@ -81,9 +81,11 @@ app.post('/:lang', function(req, res, next) {
       res.write(stderr);
     });
 
-    yield installer.run(cmd.install);
+    return installer.run(cmd.install);
+  }
 
-    // Run
+  // run the script
+  function run(ctx) {
     ctx.timeout = 10000;
     var runner = new Runner(ctx);
 
@@ -95,18 +97,31 @@ app.post('/:lang', function(req, res, next) {
       res.write(stderr);
     });
 
-    return yield runner.run(cmd.run);
-  });
+    return runner.run(cmd.run);
+  }
 
-  go(function(err, result) {
+  // execute commands
+  co(function *() {
+    ctx.cwd = yield write(body.files);
+
+    // install dependencies if we have a dependency file
+    if (cmd.dependencies && body.files[cmd.dependencies]) {
+      yield install(ctx);
+    }
+
+    return yield run(ctx);
+  })(done);
+
+  // handle response
+  function done(err, result) {
     if (err) {
       res.statusCode = 500;
-      return res.end(err.toString());
+      res.end(err.toString());
     } else {
       res.statusCode = 200;
-      return res.end(result);
+      res.end(result);
     }
-  });
+  }
 });
 
 /**

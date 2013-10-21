@@ -23,6 +23,12 @@
 exports.install = 'npm install';
 
 /**
+ * Dependency file
+ */
+
+exports.dependencies = 'package.json';
+
+/**
  * Run
  */
 
