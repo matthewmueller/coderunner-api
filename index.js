@@ -28,6 +28,14 @@ app.configure('development', function(){
 });
 
 /**
+ * Insecure warning
+ */
+
+if (args.insecure) {
+  console.warn('You\'re running this server in insecure mode');
+}
+
+/**
  * Routes
  *
  * Test commands:
