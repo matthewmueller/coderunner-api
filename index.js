@@ -2,24 +2,22 @@
  * Module dependencies.
  */
 
-var path = require('path');
-var join = path.join;
 var express = require('express');
 var app = module.exports = express();
 var server = require('http').createServer(app);
-var conf = require('conf');
 var args = require('args');
 var port = args.port || 8080;
 var co = require('co');
-var Volume = require('volume');
-var Runner = require('runner/runner.js');
+var volume = require('volume');
+var Runner = require('runner');
+var language = require('language');
 
 /**
  * Configuration
  */
 
 app.use(express.favicon(__dirname + '/favicon.ico'));
-app.use(express.bodyParser());
+app.use(express.json());
 
 app.configure('production', function() {
   app.use(express.compress());
@@ -45,41 +43,61 @@ app.post('/', function(req, res, next) {
 });
 
 app.post('/:lang', function(req, res, next) {
-  var runner = new Runner(req.params.lang);
   var body = req.body;
-  if (!runner) return res.send(500, { error: 'language not supported.' });
   if (!body.files) return res.send(400, { error: 'no files to run.' });
 
-  runner.files(body.files);
+  var lang = req.params.lang;
+  var cmd = language(lang);
+  if (!cmd) return res.send(500, { error: 'language not supported.' });
 
-  // volume
-  var volume = new Volume(conf['script volume']);
-  var write = co.wrap(volume.write, volume);
-
-  // runner
-  // var install = co.wrap(runner.install, runner);
-  var run = co.wrap(runner.run, runner);
+  // add the context
+  var ctx = {};
+  ctx.files = body.files;
+  ctx.language = body.language;
 
   // run the script
   var go = co(function *() {
 
     // write files
-    yield write(body.files);
+    ctx.cwd = yield volume(body.files);
 
-    // give the runner the volume directory
-    runner.cwd(volume.path);
+    // Install
+    ctx.timeout = 30000;
+    var installer = new Runner(ctx);
 
-    // run the code
-    var result = yield run();
+    installer.on('stdout', function(stdout) {
+      res.write(stdout);
+    });
 
-    // return the result
-    return result;
+    installer.on('stderr', function(stderr) {
+      res.write(stderr);
+    });
+
+    yield installer.run(cmd.install);
+
+    // Run
+    ctx.timeout = 10000;
+    var runner = new Runner(ctx);
+
+    runner.on('stdout', function(stdout) {
+      res.write(stdout);
+    });
+
+    runner.on('stderr', function(stderr) {
+      res.write(stderr);
+    });
+
+    return yield runner.run(cmd.run);
   });
 
   go(function(err, result) {
-    if (err) return res.send(500, { error: err });
-    if (result.stderr) return res.send(400, { stderr: result.stderr });
-    return res.send(200, result.stdout);
+    if (err) {
+      res.statusCode = 500;
+      return res.end(err.toString());
+    } else {
+      res.statusCode = 200;
+      return res.end(result);
+    }
   });
 });
 
@@ -129,3 +147,20 @@ function shutdown() {
 
 process.on('SIGTERM', shutdown);
 process.on('SIGQUIT', shutdown);
+
+/**
+ * Wrap the co functions
+ *
+ * TODO: move out
+ */
+
+function wrap(fn, ctx){
+  return function(){
+    var args = [].slice.call(arguments);
+    ctx = ctx || this;
+    return function(done){
+      args.push(done);
+      fn.apply(ctx, args);
+    }
+  }
+}

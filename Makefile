@@ -4,7 +4,7 @@ mount:
 		-p $$(vagrant ssh-config | grep Port | sed 's/Port //')
 
 images:
-	@docker build -t node-runner images/node-runner
-	@docker build -t node-installer images/node-installerimages:
+	@docker build -t node-runner images/node
+	@docker build -t python-runner images/python
 
 .PHONY: mount images
