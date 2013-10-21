@@ -32,7 +32,7 @@ app.configure('development', function(){
  */
 
 if (args.insecure) {
-  console.warn('You\'re running this server in insecure mode');
+  console.warn('\033[33mWarning: this server is running in insecure mode\033[m');
 }
 
 /**
@@ -135,7 +135,7 @@ app.configure('production', function() {
 
 if (!module.parent) {
   server.listen(port, function() {
-    console.log('listening on port %s', port);
+    console.log('Listening on port %s', port);
   });
 }
 
