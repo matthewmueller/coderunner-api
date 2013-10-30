@@ -2,24 +2,23 @@
  * Module dependencies.
  */
 
-var path = require('path');
-var join = path.join;
+var debug = require('debug')('coderunner')
 var express = require('express');
 var app = module.exports = express();
 var server = require('http').createServer(app);
-var conf = require('conf');
 var args = require('args');
 var port = args.port || 8080;
 var co = require('co');
-var Volume = require('volume');
-var Runner = require('runner/runner.js');
+var volume = require('volume');
+var Runner = require('runner');
+var language = require('language');
 
 /**
  * Configuration
  */
 
 app.use(express.favicon(__dirname + '/favicon.ico'));
-app.use(express.bodyParser());
+app.use(express.json());
 
 app.configure('production', function() {
   app.use(express.compress());
@@ -30,11 +29,19 @@ app.configure('development', function(){
 });
 
 /**
+ * Insecure warning
+ */
+
+if (args.insecure) {
+  console.warn('\033[33mWarning: this server is running in insecure mode\033[m');
+}
+
+/**
  * Routes
  *
  * Test commands:
  *
- * - node.js: curl --data @test/json/node.json -H "Content-Type: application/json" http://localhost:8080/node
+ * - node.js: curl --data @test/node/fast.json -H "Content-Type: application/json" http://localhost:8080/node
  */
 
 app.post('/', function(req, res, next) {
@@ -45,42 +52,76 @@ app.post('/', function(req, res, next) {
 });
 
 app.post('/:lang', function(req, res, next) {
-  var runner = new Runner(req.params.lang);
+  var lang = req.params.lang;
+  var cmd = language(lang);
+  if (!cmd) return res.send(500, { error: 'language not supported.' });
   var body = req.body;
-  if (!runner) return res.send(500, { error: 'language not supported.' });
   if (!body.files) return res.send(400, { error: 'no files to run.' });
 
-  runner.files(body.files);
+  // add the context
+  var ctx = {};
+  ctx.files = body.files;
+  ctx.language = lang;
 
-  // volume
-  var volume = new Volume(conf['script volume']);
-  var write = co.wrap(volume.write, volume);
+  // write the script to a volume
+  function write(files) {
+    return volume(files);
+  }
 
-  // runner
-  // var install = co.wrap(runner.install, runner);
-  var run = co.wrap(runner.run, runner);
+  // install the dependencies
+  function install(ctx) {
+    ctx.timeout = 60000;
+    var installer = new Runner(ctx);
+
+    installer.on('stdout', function(stdout) {
+      res.write(stdout);
+    });
+
+    installer.on('stderr', function(stderr) {
+      res.write(stderr);
+    });
+
+    return installer.run(cmd.install);
+  }
 
   // run the script
-  var go = co(function *() {
+  function run(ctx) {
+    ctx.timeout = 10000;
+    var runner = new Runner(ctx);
 
-    // write files
-    yield write(body.files);
+    runner.on('stdout', function(stdout) {
+      res.write(stdout);
+    });
 
-    // give the runner the volume directory
-    runner.cwd(volume.path);
+    runner.on('stderr', function(stderr) {
+      res.write(stderr);
+    });
 
-    // run the code
-    var result = yield run();
+    return runner.run(cmd.run);
+  }
 
-    // return the result
-    return result;
-  });
+  // execute commands
+  co(function *() {
+    ctx.cwd = yield write(body.files);
 
-  go(function(err, result) {
-    if (err) return res.send(500, { error: err });
-    if (result.stderr) return res.send(400, { stderr: result.stderr });
-    return res.send(200, result.stdout);
-  });
+    // install dependencies if we have a dependency file
+    if (cmd.dependencies && body.files[cmd.dependencies]) {
+      yield install(ctx);
+    }
+
+    return yield run(ctx);
+  })(done);
+
+  // handle response
+  function done(err, result) {
+    if (err) {
+      res.statusCode = 500;
+      res.end(err.toString());
+    } else {
+      res.statusCode = 200;
+      res.end(result);
+    }
+  }
 });
 
 /**
@@ -109,7 +150,7 @@ app.configure('production', function() {
 
 if (!module.parent) {
   server.listen(port, function() {
-    console.log('listening on port %s', port);
+    console.log('Listening on port %s', port);
   });
 }
 
@@ -129,3 +170,20 @@ function shutdown() {
 
 process.on('SIGTERM', shutdown);
 process.on('SIGQUIT', shutdown);
+
+/**
+ * Wrap the co functions
+ *
+ * TODO: move out
+ */
+
+function wrap(fn, ctx){
+  return function(){
+    var args = [].slice.call(arguments);
+    ctx = ctx || this;
+    return function(done){
+      args.push(done);
+      fn.apply(ctx, args);
+    }
+  }
+}

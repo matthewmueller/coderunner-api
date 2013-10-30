@@ -1,0 +1,52 @@
+#!/usr/bin/env node
+
+/**
+ * Module Dependencies
+ */
+
+var fs = require('fs');
+var stats = fs.statsSync;
+var readFile = fs.readFileSync;
+var path = require('path');
+var basename = path.basename;
+var join = path.join;
+var superagent = require('superagent');
+var program = require('commander');
+var cwd = process.cwd();
+
+/**
+ * Setup program
+ */
+
+program
+  .usage('[options] <lang> <files ...>')
+  .version(require('../package.json').version)
+  .option('-l, --lang [lang]', 'language to use', 'node')
+  .option('-h, --host [host]', 'host to connect to', '127.0.0.1')
+  .option('-p, --port [port]', 'port to connect to', 8080)
+  .parse(process.argv);
+
+/**
+ * Parse files
+ */
+
+var files = program.args;
+if (!files.length) program.help();
+
+var out = {};
+files.forEach(function(file) {
+  var base = basename(file);
+  out[base] = readFile(file, 'utf8');
+});
+
+/**
+ * Make request
+ */
+
+superagent
+  .post(program.host + ':' + program.port + '/' + program.lang)
+  .send({ files: out })
+  .end(function(err, res) {
+    if (err) throw err;
+    console.log(res.text);
+  });

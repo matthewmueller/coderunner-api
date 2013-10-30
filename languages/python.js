@@ -1,5 +1,17 @@
 /**
+ * Install
+ */
+
+exports.install = 'pip install -r requirements.txt';
+
+/**
+ * Dependency file
+ */
+
+exports.dependencies = 'requirements.txt';
+
+/**
  * Run
  */
 
-exports.run = 'pip install -r requirements.txt > /dev/null; python3.3 main.py';
+exports.run = 'python3.3 setup.py';

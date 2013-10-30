@@ -13,3 +13,4 @@ modules
 lib/conf/private.js
 lib/conf/client.js
 assets
+._*
