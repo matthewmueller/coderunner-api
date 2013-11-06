@@ -18,13 +18,15 @@
     "thunkify": "0.0.1",
     "emitter-component": "~1.0.1",
     "commander": "~2.0.0",
-    "superagent": "~0.15.7"
+    "superagent": "~0.15.7",
+    "io-server": "0.0.4",
+    "engine.io": "~0.7.10"
   },
   "devDependencies": {
     "better-assert": "*",
     "mocha": "*",
     "supertest": "*",
-    "running": "*"
+    "io-component": "*"
   },
   "bin": {
     "coderunner": "./bin/coderunner"

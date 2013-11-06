@@ -2,17 +2,39 @@
  * Module Dependencies
  */
 
+var https = require('https');
 var assert = require('better-assert');
 var supertest = require('supertest');
 var dtoj = require('./dtoj');
 var dir = __dirname + '/node/';
+var IO = require('io-component');
 var app = require('..');
+
+/**
+ * Create a server to listen on
+ */
+
+var addr = app.address();
+if (!addr) app.listen(0);
+var port = app.address().port;
+var protocol = app instanceof https.Server ? 'https' : 'http';
+var address = protocol + '://127.0.0.1:' + port + '/';
 
 /**
  * Tests
  */
 
 describe('node/', function () {
+  var io;
+
+  before(function(done) {
+    io = IO(address);
+    io.socket.on('open', done);
+  });
+
+  beforeEach(function() {
+    io = io.channel();
+  });
 
   describe('hello-world/', function() {
     this.timeout(1000);
@@ -30,6 +52,24 @@ describe('node/', function () {
         })
     });
 
+    it('should handle a websocket connection', function(done) {
+      var obj = {};
+      var stdout = '';
+      obj.language = 'node';
+      obj.files = json;
+
+      io.emit('run', obj);
+
+      io.on('run stdout', function(so) {
+        stdout += so;
+      });
+
+      io.on('end', function() {
+        assert('hello world!' == stdout);
+        done();
+      });
+
+    });
   });
 
   describe('spawn/', function() {
@@ -73,9 +113,28 @@ describe('node/', function () {
         .expect(200)
         .end(function(err, res) {
           if (err) return done(err);
-          assert(7 == res.text.length)
+          assert(/\w{7}/.test(res.text));
           done(err);
         });
+    });
+
+    it('should handle a websocket connection', function(done) {
+      var obj = {};
+      var stdout = '';
+      obj.language = 'node';
+      obj.files = json;
+
+      io.emit('run', obj);
+
+      io.on('run stdout', function(so) {
+        stdout += so;
+      });
+
+      io.on('end', function() {
+        assert(/\w{7}/.test(stdout));
+        done();
+      });
+
     });
   });
 

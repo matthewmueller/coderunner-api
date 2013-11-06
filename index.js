@@ -4,8 +4,11 @@
 
 var debug = require('debug')('coderunner')
 var express = require('express');
-var app = module.exports = express();
-var server = require('http').createServer(app);
+var engine = require('engine.io');
+var es = new engine.Server();
+var IO = require('io-server');
+var app = express();
+var server = module.exports = require('http').createServer(app);
 var args = require('args');
 var port = args.port || 8080;
 var co = require('co');
@@ -19,6 +22,8 @@ var Runner = require('runner');
 
 app.use(express.favicon(__dirname + '/favicon.ico'));
 app.use(express.json());
+app.use(express.query());
+app.use('/engine.io', es.handleRequest.bind(es));
 
 app.configure('production', function() {
   app.use(express.compress());
@@ -27,6 +32,20 @@ app.configure('production', function() {
 app.configure('development', function(){
   app.use(express.logger('dev'));
 });
+
+/**
+ * Handle the websocket upgrade
+ */
+
+server.on('upgrade', function(req, socket, head) {
+  es.handleUpgrade(req, socket, head);
+});
+
+/**
+ * Handle the websocket connection
+ */
+
+es.on('connection', IO)
 
 /**
  * Insecure warning
@@ -101,6 +120,43 @@ app.post('/:lang', function(req, res, next) {
     }
 
     res.send(200, buf.run.stdout.join(''));
+  }
+});
+
+/**
+ * Socket
+ */
+
+IO.on('run', function(body) {
+  var io = this;
+
+  // create a new runner
+  var runner = new Runner({
+    language: body.language,
+    files: body.files
+  });
+
+  runner.on('install stdout', function(stdout) {
+    if (body.verbose) io.emit('install stdout', stdout);
+  });
+
+  runner.on('install stderr', function(stderr) {
+    io.emit('install stderr', stderr);
+  });
+
+  runner.on('run stdout', function(stdout) {
+    io.emit('run stdout', stdout);
+  });
+
+  runner.on('run stderr', function(stderr) {
+    io.emit('run stderr', stderr);
+  });
+
+  runner.run(done);
+
+  function done(err) {
+    if (err) io.emit('error', err);
+    io.emit('end');
   }
 });
 
