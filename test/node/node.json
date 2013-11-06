@@ -1,8 +1,0 @@
-{
-  "language": "node",
-  "verbose": true,
-  "files": {
-    "index.js": "var uid = require('uid');\nvar cheerio = require('cheerio');\nconsole.log(uid);\nconsole.log(cheerio);",
-    "package.json": "{\"name\":\"something\",\"version\":\"0.0.1\",\"dependencies\":{\"uid\":\"*\", \"cheerio\":\"*\"}}"
-  }
-}

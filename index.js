@@ -10,8 +10,8 @@ var args = require('args');
 var port = args.port || 8080;
 var co = require('co');
 var volume = require('volume');
-var Runner = require('runner');
 var language = require('language');
+var Runner = require('runner');
 
 /**
  * Configuration
@@ -58,69 +58,49 @@ app.post('/:lang', function(req, res, next) {
   var body = req.body;
   if (!body.files) return res.send(400, { error: 'no files to run.' });
 
-  // add the context
-  var ctx = {};
-  ctx.files = body.files;
-  ctx.language = lang;
+  var runner = new Runner({
+    language: lang,
+    files: body.files
+  });
 
-  // write the script to a volume
-  function write(files) {
-    return volume(files);
-  }
+  var buf = {
+    install: { stdout: [], stderr: [] },
+    run: { stdout: [], stderr: [] }
+  };
 
-  // install the dependencies
-  function install(ctx) {
-    ctx.timeout = 60000;
-    var installer = new Runner(ctx);
+  runner.on('install stdout', function(stdout) {
+    buf.install.stdout.push(stdout);
+  });
 
-    installer.on('stdout', function(stdout) {
-      res.write(stdout);
-    });
+  runner.on('install stderr', function(stderr) {
+    buf.install.stderr.push(stderr);
+  });
 
-    installer.on('stderr', function(stderr) {
-      res.write(stderr);
-    });
+  runner.on('run stdout', function(stdout) {
+    buf.run.stdout.push(stdout);
+  });
 
-    return installer.run(cmd.install);
-  }
+  runner.on('run stderr', function(stderr) {
+    buf.run.stderr.push(stderr);
+  });
 
-  // run the script
-  function run(ctx) {
-    ctx.timeout = 10000;
-    var runner = new Runner(ctx);
-
-    runner.on('stdout', function(stdout) {
-      res.write(stdout);
-    });
-
-    runner.on('stderr', function(stderr) {
-      res.write(stderr);
-    });
-
-    return runner.run(cmd.run);
-  }
-
-  // execute commands
-  co(function *() {
-    ctx.cwd = yield write(body.files);
-
-    // install dependencies if we have a dependency file
-    if (cmd.dependencies && body.files[cmd.dependencies]) {
-      yield install(ctx);
-    }
-
-    return yield run(ctx);
-  })(done);
+  runner.run(done);
 
   // handle response
   function done(err, result) {
     if (err) {
-      res.statusCode = 500;
-      res.end(err.toString());
-    } else {
-      res.statusCode = 200;
-      res.end(result);
+      return res.send(500, { error: err.toString() });
+    } else if (buf.install.stderr.length) {
+      return res.send(500, { error: buf.install.stderr.join('') });
+    } else if (buf.run.stderr.length) {
+      return res.send(500, { error: buf.run.stderr.join('') });
     }
+
+    if (body.verbose) {
+      buf.run.stdout = buf.install.stdout.concat(buf.run.stdout);
+    }
+
+    res.send(200, buf.run.stdout.join(''));
   }
 });
 

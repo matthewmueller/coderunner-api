@@ -2,8 +2,6 @@
  * Module Dependencies
  */
 
-// var co = require('co');
-// var fs = require('co-fs');
 var fs = require('fs');
 var path = require('path');
 var join = path.join;
@@ -31,42 +29,3 @@ function dtoj(dir) {
 
   return out;
 }
-
-/**
- * Initialize `dtoj`
- *
- * @param {String} dir
- * @param {Function} fn
- */
-
-// function dtoj(dir, fn) {
-//   co(function *() {
-//     var out = {};
-//     var files = yield fs.readdir(dir);
-
-//     var contents = yield each(files, function(file) {
-//       return fs.readFile(join(dir, file), 'utf8');
-//     });
-
-//     files.forEach(function(file, i) {
-//       out[file] = contents[i];
-//     });
-
-//     return out;
-//   })(fn);
-// }
-
-// /**
-//  * Parallel each function from Julian Gruber
-//  */
-
-// function each(arr, fn) {
-//   return arr.map(function(el, i, all) {
-//     return fn(el, i, all);
-//   });
-// }
-
-
-
-// var json = dtoj(__dirname + '/node');
-// console.log(json);

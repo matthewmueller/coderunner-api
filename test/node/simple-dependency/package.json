@@ -1,0 +1,7 @@
+{
+  "name": "simple-dependency",
+  "version": "0.0.1",
+  "dependencies": {
+    "uid": "*"
+  }
+}

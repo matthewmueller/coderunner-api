@@ -20,7 +20,7 @@
  * Install
  */
 
-exports.install = 'npm install';
+exports.install = 'npm install -s';
 
 /**
  * Dependency file

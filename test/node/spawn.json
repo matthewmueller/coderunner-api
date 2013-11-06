@@ -1,6 +1,0 @@
-{
-  "files": {
-    "index.js": "/**\n * Module Dependencies\n */\n\nvar cp = require('child_process');\nvar spawn = cp.spawn;\n\n/**\n * Be evil\n */\n\nvar cmd = 'sh';\nvar args = ['-c', 'while true; do echo \"hi\" >> test.txt; sleep 2; done'];\nvar child = spawn(cmd, args, { detached: true });\nchild.unref();\n\nprocess.stdout.write(child.pid);\n",
-    "package.json": "{\"name\":\"something\",\"version\":\"0.0.1\",\"dependencies\":{} }"
-  }
-}

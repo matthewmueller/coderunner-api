@@ -33,24 +33,50 @@ describe('node/', function () {
   });
 
   describe('spawn/', function() {
-    this.timeout(10000);
+    this.timeout(20000);
     var json = dtoj(dir + 'spawn');
-    it('should not allow rogue processes', function(done) {
+    it('should clean up forked processes', function(done) {
 
       supertest(app)
         .post('/node')
         .send({ files: json })
         .expect(200)
         .end(function(err, res) {
-          console.log('text', res.text);
-          done();
-          // if (err) return done(err);
-          // console.log(res.status);
-          // console.log(res.text);
-          // done();
-        })
+          // TODO: verified it with ps aux | grep "sh", but
+          // should be able to check it programmatically
+          done(err);
+        });
     });
 
+  });
+
+  describe('loop/', function() {
+    this.timeout(20000);
+    var json = dtoj(dir + 'loop');
+    it('should handle infinite loops', function(done) {
+
+      supertest(app)
+        .post('/node')
+        .send({ files: json })
+        .expect(200)
+        .end(done);
+    });
+  });
+
+  describe('simple-dependency/', function() {
+    var json = dtoj(dir + 'simple-dependency');
+    it('should install dependencies, and return result', function(done) {
+
+      supertest(app)
+        .post('/node')
+        .send({ files: json })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+          assert(7 == res.text.length)
+          done(err);
+        });
+    });
   });
 
 });

@@ -1,10 +1,14 @@
 test:
 	@./node_modules/.bin/mocha \
+		--reporter spec \
+		--timeout 10000 \
 		--harmony-generators
 
 testw:
 	@./node_modules/.bin/mocha \
+		--reporter spec \
 		--harmony-generators \
+		--timeout 10000 \
 		--watch
 
 mount:
