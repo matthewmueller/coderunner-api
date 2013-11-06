@@ -12,6 +12,8 @@ var app = require('..');
 
 /**
  * Create a server to listen on
+ *
+ * TODO: have supertest also rely on this server.
  */
 
 var addr = app.address();
@@ -118,20 +120,27 @@ describe('node/', function () {
         });
     });
 
-    it('should handle a websocket connection', function(done) {
+    it('should handle a websocket connection with verbose', function(done) {
       var obj = {};
-      var stdout = '';
+      var install = '';
+      var run = '';
       obj.language = 'node';
       obj.files = json;
+      obj.verbose = true;
 
       io.emit('run', obj);
 
+      io.on('install stdout', function(so) {
+        install += so;
+      });
+
       io.on('run stdout', function(so) {
-        stdout += so;
+        run += so;
       });
 
       io.on('end', function() {
-        assert(/\w{7}/.test(stdout));
+        assert(~install.indexOf('uid@'));
+        assert(/\w{7}/.test(run));
         done();
       });
 
