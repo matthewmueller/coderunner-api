@@ -164,20 +164,8 @@ IO.on('run', function(body) {
  * Environment configurations
  */
 
-app.configure('development', function() {
+app.configure(function() {
   app.use(express.errorHandler());
-});
-
-// TODO: make more user-friendly & log
-app.configure('production', function() {
-  // build once
-  build(function(err) {
-    if (err) throw(err);
-  });
-
-  app.use(function(err, req, res, next) {
-    res.redirect('/');
-  });
 });
 
 /**
