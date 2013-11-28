@@ -1,9 +1,0 @@
-{
-  "language": "python",
-  "files" : {
-    "setup.py": "from bs4 import BeautifulSoup\n\nsoup = BeautifulSoup('<p>The law firm of Dewey, Cheatem, & Howe</p>')\nprint(soup.p)\n# <p>The law firm of Dewey, Cheatem, &amp; Howe</p>\n\nsoup = BeautifulSoup('<a href=\"http://example.com/?foo=val1&bar=val2\">A link</a>')\nprint(soup.a)\n",
-    "requirements.txt": "beautifulsoup4\n"
-  }
-}
-
-

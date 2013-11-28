@@ -76,6 +76,7 @@ describe('python/', function () {
   });
 
   describe('simple-dependency/', function() {
+    this.timeout(10000);
     var json = dtoj(dir + 'simple-dependency');
     it('should install dependencies, and return result', function(done) {
 
@@ -86,9 +87,8 @@ describe('python/', function () {
         .end(function(err, res) {
           if (!res.ok) return done(res.text);
           if (err) return done(err);
-          console.log(res.text);
-          // assert(/\w{7}/.test(res.text));
-          done(err);
+          assert('apples, bananas & pears' == res.text);
+          done();
         });
     });
   });
