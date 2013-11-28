@@ -106,6 +106,7 @@ describe('node/', function () {
   });
 
   describe('simple-dependency/', function() {
+    this.timeout(10000);
     var json = dtoj(dir + 'simple-dependency');
     it('should install dependencies, and return result', function(done) {
 
@@ -121,6 +122,7 @@ describe('node/', function () {
     });
 
     it('should handle a websocket connection with verbose', function(done) {
+      this.timeout(10000);
       var obj = {};
       var install = '';
       var run = '';
